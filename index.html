@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Latihan Kraepelin</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f3f4f6;
+        color: #111827;
+        display: flex;
+        justify-content: center;
+        min-height: 100vh;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 500px;
+        padding: 25px 18px;
+        text-align: center;
+    }
+
+    h1 {
+        margin-bottom: 8px;
+    }
+
+    .desc {
+        color: #6b7280;
+        margin-bottom: 25px;
+    }
+
+    button {
+        border: none;
+        border-radius: 12px;
+        padding: 14px 25px;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    #startBtn {
+        background: #2563eb;
+        color: white;
+    }
+
+    #startBtn:active {
+        transform: scale(.97);
+    }
+
+    .hidden {
+        display: none !important;
+    }
+
+    .topbar {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        font-weight: bold;
+    }
+
+    .timer {
+        color: #dc2626;
+    }
+
+    /* POPUP */
+    .popup {
+        background: white;
+        border-radius: 20px;
+        padding: 35px 20px 25px;
+        box-shadow: 0 10px 30px rgba(0,0,0,.12);
+    }
+
+    .question {
+        font-size: 42px;
+        font-weight: bold;
+        margin-bottom: 25px;
+    }
+
+    .answer {
+        width: 100%;
+        height: 65px;
+        font-size: 32px;
+        text-align: center;
+        border: 3px solid #d1d5db;
+        border-radius: 14px;
+        outline: none;
+    }
+
+    .answer:focus {
+        border-color: #2563eb;
+    }
+
+    .hint {
+        margin-top: 12px;
+        color: #6b7280;
+        font-size: 14px;
+    }
+
+    #result {
+        background: white;
+        padding: 25px;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,.1);
+    }
+
+    .score {
+        font-size: 40px;
+        font-weight: bold;
+        margin: 15px 0;
+    }
+
+    .stats {
+        line-height: 1.8;
+        margin-bottom: 20px;
+    }
+
+    #restartBtn {
+        background: #2563eb;
+        color: white;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- MENU -->
+    <div id="menu">
+        <h1>Latihan Kraepelin</h1>
+
+        <p class="desc">
+            Jawab hasil penjumlahan angka.<br>
+            Yang dimasukkan hanya angka terakhir.
+        </p>
+
+        <button id="startBtn">START</button>
+    </div>
+
+
+    <!-- GAME -->
+    <div id="game" class="hidden">
+
+        <div class="topbar">
+            <span>Soal: <span id="number">1</span></span>
+            <span class="timer">
+                <span id="time">60</span>s
+            </span>
+        </div>
+
+        <div class="popup">
+
+            <div class="question" id="question">
+                7 + 6 = ?
+            </div>
+
+            <!--
+                inputmode numeric membuat keyboard HP
+                langsung menampilkan keypad angka.
+            -->
+            <input
+                id="answer"
+                class="answer"
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                autocomplete="off"
+                maxlength="1"
+                autofocus
+            >
+
+            <div class="hint">
+                Ketik angka terakhir → tekan ENTER
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- RESULT -->
+    <div id="result" class="hidden">
+
+        <h2>Waktu Habis!</h2>
+
+        <div class="score">
+            <span id="correct">0</span> benar
+        </div>
+
+        <div class="stats">
+            Total soal: <span id="total">0</span><br>
+            Salah: <span id="wrong">0</span><br>
+            Akurasi: <span id="accuracy">0</span>%
+        </div>
+
+        <button id="restartBtn">
+            COBA LAGI
+        </button>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const menu = document.getElementById("menu");
+const game = document.getElementById("game");
+const result = document.getElementById("result");
+
+const startBtn = document.getElementById("startBtn");
+const restartBtn = document.getElementById("restartBtn");
+
+const question = document.getElementById("question");
+const answer = document.getElementById("answer");
+
+const number = document.getElementById("number");
+const time = document.getElementById("time");
+
+const correctText = document.getElementById("correct");
+const totalText = document.getElementById("total");
+const wrongText = document.getElementById("wrong");
+const accuracyText = document.getElementById("accuracy");
+
+
+// =========================
+// SETTING
+// =========================
+
+const GAME_TIME = 60;
+
+
+// =========================
+// VARIABLE
+// =========================
+
+let timer;
+let remainingTime;
+
+let total = 0;
+let correct = 0;
+let wrong = 0;
+
+let currentAnswer = 0;
+
+
+// =========================
+// RANDOM SOAL
+// =========================
+
+function generateQuestion() {
+
+    // Angka 0 - 9
+    const a = Math.floor(Math.random() * 10);
+    const b = Math.floor(Math.random() * 10);
+
+    const hasil = a + b;
+
+    // Ambil angka terakhir
+    currentAnswer = hasil % 10;
+
+    question.textContent = `${a} + ${b} = ?`;
+
+    number.textContent = total + 1;
+
+    answer.value = "";
+
+    // Pertahankan fokus supaya keyboard tidak perlu dibuka lagi
+    answer.focus();
+}
+
+
+// =========================
+// START GAME
+// =========================
+
+function startGame() {
+
+    menu.classList.add("hidden");
+    result.classList.add("hidden");
+    game.classList.remove("hidden");
+
+    total = 0;
+    correct = 0;
+    wrong = 0;
+
+    remainingTime = GAME_TIME;
+
+    time.textContent = remainingTime;
+
+    generateQuestion();
+
+    clearInterval(timer);
+
+    timer = setInterval(() => {
+
+        remainingTime--;
+
+        time.textContent = remainingTime;
+
+        if (remainingTime <= 0) {
+            endGame();
+        }
+
+    }, 1000);
+}
+
+
+// =========================
+// JAWAB SOAL
+// =========================
+
+function submitAnswer() {
+
+    if (answer.value === "") {
+        return;
+    }
+
+    const userAnswer = Number(answer.value);
+
+    total++;
+
+    if (userAnswer === currentAnswer) {
+        correct++;
+    } else {
+        wrong++;
+    }
+
+    generateQuestion();
+}
+
+
+// =========================
+// ENTER
+// =========================
+
+answer.addEventListener("keydown", function(event) {
+
+    if (event.key === "Enter") {
+
+        event.preventDefault();
+
+        submitAnswer();
+    }
+
+});
+
+
+// =========================
+// BATASI INPUT
+// =========================
+
+answer.addEventListener("input", function() {
+
+    // Hanya angka
+    this.value = this.value.replace(/[^0-9]/g, "");
+
+    // Maksimal satu angka
+    this.value = this.value.slice(0, 1);
+
+});
+
+
+// =========================
+// GAME SELESAI
+// =========================
+
+function endGame() {
+
+    clearInterval(timer);
+
+    game.classList.add("hidden");
+    result.classList.remove("hidden");
+
+    correctText.textContent = correct;
+    totalText.textContent = total;
+    wrongText.textContent = wrong;
+
+    let accuracy = 0;
+
+    if (total > 0) {
+        accuracy = Math.round((correct / total) * 100);
+    }
+
+    accuracyText.textContent = accuracy;
+}
+
+
+// =========================
+// BUTTON
+// =========================
+
+startBtn.addEventListener("click", startGame);
+
+restartBtn.addEventListener("click", startGame);
+
+</script>
+
+</body>
+</html>
